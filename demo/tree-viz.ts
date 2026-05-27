@@ -52,6 +52,9 @@ function topicMatchesPattern(topic: string, pattern: string): boolean {
   return tp.length === pp.length;
 }
 
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
 export function renderTree(
   container: HTMLElement,
   root: TreeNode,
@@ -90,7 +93,7 @@ function renderNode(
       segClass = 'segment wildcard-hash';
     }
 
-    label.innerHTML = `<span style="color:var(--text-dim)">${indent}</span><span class="${segClass}">${segText}</span>`;
+    label.innerHTML = `<span style="color:var(--text-dim)">${indent}</span><span class="${segClass}">${escapeHtml(segText)}</span>`;
 
     if (node.subscriberCount > 0) {
       const count = document.createElement('span');

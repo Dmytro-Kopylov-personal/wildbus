@@ -6,6 +6,9 @@ import { buildTree, renderTree, type SubInfo } from './tree-viz.js';
 const STEPS = 16;
 const WATERFALL_SIZE = 8;
 
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
 interface Track {
   topic: string;
   label: string;
@@ -83,7 +86,7 @@ function buildRowLabels() {
     `<div class="row-label row-${i}" data-row="${i}">
       <span class="dot" style="background:${t.color}"></span>
       <span class="row-label-text">${t.label}</span>
-      <input class="row-payload" id="row-payload-${i}" data-row="${i}" value="${t.payload.replace(/"/g, '&quot;')}" title="payload" spellcheck="false" />
+      <input class="row-payload" id="row-payload-${i}" data-row="${i}" value="${escapeHtml(t.payload)}" title="payload" spellcheck="false" />
       <span class="row-count" id="row-count-${i}">0</span>
     </div>`
   ).join('');
@@ -101,7 +104,7 @@ function buildRowLabels() {
 function buildStepNumbers() {
   stepNumbers.innerHTML = new Array(STEPS).fill(0).map((_, i) =>
     `<div class="step-col" data-step="${i}">
-      <input class="col-payload" id="col-payload-${i}" data-step="${i}" value="${colPayloads[i]}" title="column payload" spellcheck="false" />
+      <input class="col-payload" id="col-payload-${i}" data-step="${i}" value="${escapeHtml(colPayloads[i])}" title="column payload" spellcheck="false" />
       <div class="step-num">${i + 1}</div>
     </div>`
   ).join('');
@@ -128,10 +131,10 @@ function buildGrid() {
 
 function buildSubChips() {
   subList.innerHTML = SUBS.map((s, i) =>
-    `<div class="sub-chip sub-${i}" data-topic="${s.topic.replace(/"/g, '&quot;')}">
+    `<div class="sub-chip sub-${i}" data-topic="${escapeHtml(s.topic)}">
       <div class="chip-dot-row">
         <span class="dot" style="background:${s.color}"></span>
-        <span class="chip-topic">${s.topic}</span>
+        <span class="chip-topic">${escapeHtml(s.topic)}</span>
         <span class="chip-count" id="sub-count-${i}">0</span>
       </div>
       <div class="waterfall" id="waterfall-${i}"></div>
@@ -147,8 +150,8 @@ function renderWaterfall(subIndex: number) {
     .slice(0, WATERFALL_SIZE)
     .map((e, j) =>
       `<div class="wf-entry${j === 0 ? ' wf-fresh' : ''}" style="opacity:${1 - j * 0.1}">
-        <span class="wf-src">${e.src}</span>
-        <span class="wf-payload">${e.payload}</span>
+        <span class="wf-src">${escapeHtml(e.src)}</span>
+        <span class="wf-payload">${escapeHtml(e.payload)}</span>
       </div>`
     ).join('');
 }
