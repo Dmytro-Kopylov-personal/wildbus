@@ -170,12 +170,12 @@ function updateTree() {
 function flashTreeNodes(publishedTopic: string) {
   const parts = publishedTopic.split('/');
   for (let i = 0; i <= parts.length; i++) {
-    const path = parts.slice(0, i).join('/') || 'root';
+    const path = parts.slice(0, i).join('/');
     treeHitCounts.set(path, (treeHitCounts.get(path) ?? 0) + 1);
   }
   updateTree();
   for (let i = 0; i <= parts.length; i++) {
-    const path = parts.slice(0, i).join('/') || 'root';
+    const path = parts.slice(0, i).join('/');
     const node = document.querySelector(`.tree-node[data-path="${CSS.escape(path)}"]`);
     if (node) {
       node.classList.add('active');

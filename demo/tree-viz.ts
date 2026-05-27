@@ -59,7 +59,7 @@ export function renderTree(
   subs?: SubInfo[],
 ) {
   container.innerHTML = '';
-  renderNode(container, root, 0, 'root', hitCounts, subs);
+  renderNode(container, root, 0, '', hitCounts, subs);
 }
 
 function renderNode(
