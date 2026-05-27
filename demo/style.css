@@ -358,3 +358,169 @@ footer {
   from { opacity: 1; }
   to   { opacity: 0; }
 }
+
+/* ── header actions (auto mode) ── */
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#auto-btn {
+  background: var(--surface2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 12px;
+  font-family: var(--font);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+#auto-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+#auto-btn.running {
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.2);
+}
+
+.speed-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.speed-label input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 4px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 10px;
+  text-align: center;
+  outline: none;
+}
+
+.speed-label input:focus {
+  border-color: var(--accent);
+}
+
+/* ── subscriber header + add form ── */
+
+#subscriber-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px 8px;
+}
+
+#subscriber-header h2 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+
+#add-sub-btn {
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  padding: 2px 8px;
+  font-family: var(--font);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+#add-sub-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+#add-sub-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+#add-sub-row input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 8px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 11px;
+  outline: none;
+}
+
+#add-sub-row input:focus {
+  border-color: var(--accent);
+}
+
+#add-sub-topic {
+  width: 180px;
+}
+
+#add-sub-confirm,
+#add-sub-cancel {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  padding: 4px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#add-sub-confirm:hover {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+#add-sub-cancel:hover {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+/* ── subscriber card remove button ── */
+
+.card-remove {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.subscriber-card {
+  position: relative;
+}
+
+.subscriber-card:hover .card-remove {
+  opacity: 0.6;
+}
+
+.subscriber-card .card-remove:hover {
+  opacity: 1;
+  color: var(--red);
+}

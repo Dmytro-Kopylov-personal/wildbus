@@ -11,6 +11,14 @@
     <header>
       <h1>wildbus</h1>
       <span class="subtitle">typed topic pub/sub with wildcards</span>
+      <div class="header-actions">
+        <button id="auto-btn">▶ auto mode</button>
+        <label class="speed-label">
+          <span>every</span>
+          <input id="auto-speed" type="number" value="800" min="100" step="100" style="width:50px" />
+          <span>ms</span>
+        </label>
+      </div>
     </header>
 
     <main>
@@ -25,7 +33,16 @@
           <div class="stat"><span class="stat-label">messages</span><span class="stat-value" id="stat-messages">0</span></div>
           <div class="stat"><span class="stat-label">last topic</span><span class="stat-value" id="stat-topic">—</span></div>
         </div>
-        <h2>subscribers</h2>
+        <div id="subscriber-header">
+          <h2>subscribers</h2>
+          <button id="add-sub-btn" title="add subscriber">+ add</button>
+          <div id="add-sub-row" style="display:none">
+            <input id="add-sub-topic" placeholder="topic (e.g. alerts/+/critical)" autocomplete="off" spellcheck="false" />
+            <input id="add-sub-icon" placeholder="icon" maxlength="2" style="width:44px" autocomplete="off" />
+            <button id="add-sub-confirm">✓</button>
+            <button id="add-sub-cancel" class="ghost">✗</button>
+          </div>
+        </div>
         <div id="subscriber-grid"></div>
       </section>
     </main>
