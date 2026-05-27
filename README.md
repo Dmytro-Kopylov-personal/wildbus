@@ -75,6 +75,31 @@ Total number of registration entries.
 
 Remove all subscriptions.
 
+## How it works
+
+Wildbus stores subscriptions in a **topic trie**. Each node has three kinds of children:
+
+```
+node
+├── children: Map<segment, node>   // exact literal match
+├── plus: node | null              // + matches one level
+└── hash: node | null              // # matches zero or more
+└── listeners: Set<fn>             // subscribers at this node
+```
+
+When you publish to `drums/kick`, the trie does a recursive fan-out from the root:
+
+```
+publish("drums/kick")
+  ├── exact: children["drums"] → children["kick"] → collect listeners
+  ├── plus:  if node.plus → recurse, consuming one level
+  └── hash:  if node.hash → collect listeners now (zero levels) AND recurse
+```
+
+A single publish hits exact matches, single-level wildcards, and multi-level wildcards in one traversal. Results land in a `Set`, so a listener subscribed to both `drums/+` and `drums/#` only fires once.
+
+The bus wrapper adds type generics, error isolation (one broken listener can't kill delivery), and idempotent unsubscribe.
+
 ## Why not EventEmitter?
 
 Wildbus routes by **topic pattern**, not channel name. One publish can hit subscribers on `exact/match`, `category/+`, and `root/#` — all in a single call. That composability is what makes it useful for complex UIs where components care about overlapping slices of the state tree.
