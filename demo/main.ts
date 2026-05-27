@@ -60,6 +60,7 @@ interface WaterfallEntry {
   time: number;
 }
 const subWaterfalls: WaterfallEntry[][] = SUBS.map(() => []);
+const colPayloads: string[] = new Array(STEPS).fill('').map((_, i) => String(i + 1));
 
 // ── DOM refs ──
 
@@ -99,8 +100,20 @@ function buildRowLabels() {
 
 function buildStepNumbers() {
   stepNumbers.innerHTML = new Array(STEPS).fill(0).map((_, i) =>
-    `<div class="step-num" data-step="${i}">${i + 1}</div>`
+    `<div class="step-col" data-step="${i}">
+      <input class="col-payload" id="col-payload-${i}" value="${colPayloads[i]}" title="column payload" spellcheck="false" />
+      <div class="step-num">${i + 1}</div>
+    </div>`
   ).join('');
+
+  // wire column payload inputs
+  stepNumbers.querySelectorAll('.col-payload').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const ci = Number((inp as HTMLElement).dataset.step);
+      colPayloads[ci] = (inp as HTMLInputElement).value;
+    });
+    inp.addEventListener('click', (e) => e.stopPropagation());
+  });
 }
 
 function buildGrid() {
@@ -255,7 +268,8 @@ function tick(step: number) {
     if (track.steps[step]) {
       totalMessages++;
       trackCounts[ri]++;
-      bus.publish(track.topic, track.payload);
+      const payload = `${track.payload} ${colPayloads[step]}`;
+      bus.publish(track.topic, payload);
       flashTreeNodes(track.topic);
       flashRowLabel(ri);
       updateTrackCounter(ri);
