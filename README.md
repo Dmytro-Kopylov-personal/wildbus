@@ -19,6 +19,8 @@ bus.publish<User>('users/42/status', { id: 42, name: 'Alice' });
 
 The repo includes an interactive sequencer demo that visualizes topic routing in real time — think drum machine meets pub/sub.
 
+**[Live demo →](https://dmytro-kopylov-personal.github.io/wildbus/)**
+
 ```
 cd demo && npm install && npm run dev
 ```
