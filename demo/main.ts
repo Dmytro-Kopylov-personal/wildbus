@@ -4,25 +4,26 @@ import { buildTree, renderTree } from './tree-viz.js';
 // ── sequencer config ──
 
 const STEPS = 16;
+const WATERFALL_SIZE = 8;
 
 interface Track {
   topic: string;
   label: string;
-  color: string; // CSS var name
-  steps: boolean[]; // length STEPS
+  color: string;
+  steps: boolean[];
+  payload: string;
 }
 
 const TRACKS: Track[] = [
-  { topic: 'drums/kick',            label: 'kick',     color: 'var(--red)',    steps: [] },
-  { topic: 'drums/snare',           label: 'snare',    color: 'var(--orange)', steps: [] },
-  { topic: 'drums/hihat',           label: 'hihat',    color: 'var(--yellow)', steps: [] },
-  { topic: 'drums/kick/velocity',   label: 'vel',      color: 'var(--pink)',   steps: [] },
-  { topic: 'bass/note',             label: 'bass',     color: 'var(--cyan)',   steps: [] },
-  { topic: 'lead/synth',            label: 'synth',    color: 'var(--accent)', steps: [] },
-  { topic: 'lead/pad',              label: 'pad',      color: 'var(--purple)', steps: [] },
+  { topic: 'drums/kick',            label: 'kick',     color: 'var(--red)',    steps: [], payload: 'boom' },
+  { topic: 'drums/snare',           label: 'snare',    color: 'var(--orange)', steps: [], payload: 'clap' },
+  { topic: 'drums/hihat',           label: 'hihat',    color: 'var(--yellow)', steps: [], payload: 'tss' },
+  { topic: 'drums/kick/velocity',   label: 'vel',      color: 'var(--pink)',   steps: [], payload: '127' },
+  { topic: 'bass/note',             label: 'bass',     color: 'var(--cyan)',   steps: [], payload: 'C2' },
+  { topic: 'lead/synth',            label: 'synth',    color: 'var(--accent)', steps: [], payload: 'saw' },
+  { topic: 'lead/pad',              label: 'pad',      color: 'var(--purple)', steps: [], payload: 'warm' },
 ];
 
-// init empty steps
 for (const t of TRACKS) {
   t.steps = new Array(STEPS).fill(false);
 }
@@ -53,8 +54,12 @@ const trackCounts = new Array(TRACKS.length).fill(0);
 const subCounts = new Array(SUBS.length).fill(0);
 const treeHitCounts = new Map<string, number>();
 
-// sub chips track their last payload + flash timeout
-const subStates = new Map<string, { payload: string; timeout: ReturnType<typeof setTimeout> | null }>();
+interface WaterfallEntry {
+  src: string;
+  payload: string;
+  time: number;
+}
+const subWaterfalls: WaterfallEntry[][] = SUBS.map(() => []);
 
 // ── DOM refs ──
 
@@ -75,10 +80,21 @@ const stepIndicator = document.getElementById('step-indicator')!;
 function buildRowLabels() {
   rowLabels.innerHTML = TRACKS.map((t, i) =>
     `<div class="row-label row-${i}" data-row="${i}">
-      <span class="dot" style="background:${t.color}"></span>${t.label}
+      <span class="dot" style="background:${t.color}"></span>
+      <span class="row-label-text">${t.label}</span>
+      <input class="row-payload" id="row-payload-${i}" value="${t.payload.replace(/"/g, '&quot;')}" title="payload" spellcheck="false" />
       <span class="row-count" id="row-count-${i}">0</span>
     </div>`
   ).join('');
+
+  // wire payload inputs
+  rowLabels.querySelectorAll('.row-payload').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const ri = Number((inp as HTMLElement).dataset.row);
+      TRACKS[ri]!.payload = (inp as HTMLInputElement).value;
+    });
+    inp.addEventListener('click', (e) => e.stopPropagation());
+  });
 }
 
 function buildStepNumbers() {
@@ -95,8 +111,6 @@ function buildGrid() {
       ).join('')}
     </div>`
   ).join('');
-
-  // click handled via delegation on #grid
 }
 
 function buildSubChips() {
@@ -105,11 +119,25 @@ function buildSubChips() {
       <div class="chip-dot-row">
         <span class="dot" style="background:${s.color}"></span>
         <span class="chip-topic">${s.topic}</span>
+        <span class="chip-count" id="sub-count-${i}">0</span>
       </div>
-      <span class="chip-count" id="sub-count-${i}">0</span>
-      <span class="chip-last">—</span>
+      <div class="waterfall" id="waterfall-${i}"></div>
     </div>`
   ).join('');
+}
+
+function renderWaterfall(subIndex: number) {
+  const container = document.getElementById(`waterfall-${subIndex}`);
+  if (!container) return;
+  const entries = subWaterfalls[subIndex]!;
+  container.innerHTML = entries
+    .slice(0, WATERFALL_SIZE)
+    .map((e, j) =>
+      `<div class="wf-entry${j === 0 ? ' wf-fresh' : ''}" style="opacity:${1 - j * 0.1}">
+        <span class="wf-src">${e.src}</span>
+        <span class="wf-payload">${e.payload}</span>
+      </div>`
+    ).join('');
 }
 
 function updateTopicSet() {
@@ -127,14 +155,11 @@ function updateTree() {
 
 function flashTreeNodes(publishedTopic: string) {
   const parts = publishedTopic.split('/');
-  // increment hit counts along the path
   for (let i = 0; i <= parts.length; i++) {
     const path = parts.slice(0, i).join('/') || 'root';
     treeHitCounts.set(path, (treeHitCounts.get(path) ?? 0) + 1);
   }
-  // rebuild tree to show updated counts
   updateTree();
-  // highlight matching path
   for (let i = 0; i <= parts.length; i++) {
     const path = parts.slice(0, i).join('/') || 'root';
     const node = document.querySelector(`.tree-node[data-path="${CSS.escape(path)}"]`);
@@ -147,28 +172,31 @@ function flashTreeNodes(publishedTopic: string) {
 
 // ── subscribers ──
 
-function flashSub(topic: string, publishedTopic: string, subIndex: number) {
-  const chip = document.querySelector(`.sub-chip[data-topic="${CSS.escape(topic)}"]`);
-  if (!chip) return;
-
+function flashSub(topic: string, srcTopic: string, payload: string, subIndex: number) {
   subCounts[subIndex]++;
 
-  const short = publishedTopic.split('/').pop() || publishedTopic;
+  // push to waterfall
+  const wf = subWaterfalls[subIndex]!;
+  wf.unshift({
+    src: srcTopic.split('/').pop() || srcTopic,
+    payload,
+    time: Date.now(),
+  });
+  if (wf.length > WATERFALL_SIZE * 2) wf.length = WATERFALL_SIZE * 2;
 
   // update count
   const countEl = document.getElementById(`sub-count-${subIndex}`);
   if (countEl) countEl.textContent = String(subCounts[subIndex]);
 
-  // update last-hit label
-  const lastEl = chip.querySelector('.chip-last');
-  if (lastEl) lastEl.textContent = short;
+  // re-render waterfall
+  renderWaterfall(subIndex);
 
   // flash
-  const state = subStates.get(topic);
-  if (state?.timeout) clearTimeout(state.timeout);
-  chip.classList.add('flash');
-  const t = setTimeout(() => chip.classList.remove('flash'), 250);
-  subStates.set(topic, { payload: short, timeout: t });
+  const chip = document.querySelector(`.sub-chip[data-topic="${CSS.escape(topic)}"]`);
+  if (chip) {
+    chip.classList.add('flash');
+    setTimeout(() => chip.classList.remove('flash'), 250);
+  }
 }
 
 // ── counters ──
@@ -194,11 +222,9 @@ function flashRowLabel(ri: number) {
 // ── playhead ──
 
 function movePlayhead(step: number, advance: boolean) {
-  // clear previous
   grid.querySelectorAll('.grid-cell.playhead').forEach(c => c.classList.remove('playhead'));
   document.querySelectorAll('.step-num.active').forEach(n => n.classList.remove('active'));
 
-  // set new
   const cells = grid.querySelectorAll(`.grid-cell[data-step="${step}"]`);
   cells.forEach(c => {
     c.classList.add('playhead');
@@ -210,8 +236,6 @@ function movePlayhead(step: number, advance: boolean) {
 
   const num = document.querySelector(`.step-num[data-step="${step}"]`);
   if (num) num.classList.add('active');
-
-  stepIndicator.textContent = `step ${step + 1} / ${STEPS}`;
 }
 
 // ── sequencer tick ──
@@ -226,13 +250,12 @@ function tick(step: number) {
   currentStep = step;
   movePlayhead(step, advance);
 
-  // publish for active cells in this column
   for (let ri = 0; ri < TRACKS.length; ri++) {
     const track = TRACKS[ri]!;
     if (track.steps[step]) {
       totalMessages++;
       trackCounts[ri]++;
-      bus.publish(track.topic, `hit@${step + 1}`);
+      bus.publish(track.topic, track.payload);
       flashTreeNodes(track.topic);
       flashRowLabel(ri);
       updateTrackCounter(ri);
@@ -240,14 +263,12 @@ function tick(step: number) {
   }
   updateTotalCounter();
 
-  // advance
   currentStep = (step + 1) % STEPS;
 }
 
 // ── transport ──
 
 function stepIntervalMs(): number {
-  // one step = a sixteenth note at current BPM
   return (60000 / bpm) / 4;
 }
 
@@ -320,7 +341,6 @@ bpmInput.addEventListener('change', () => {
   restartTimer();
 });
 
-// keyboard
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space') {
     e.preventDefault();
@@ -328,11 +348,11 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ── subscribe (update UI on receive) ──
+// ── subscribe ──
 
 SUBS.forEach((sub, i) => {
-  bus.subscribe(sub.topic, (_payload: unknown, srcTopic: string) => {
-    flashSub(sub.topic, srcTopic, i);
+  bus.subscribe(sub.topic, (payload: unknown, srcTopic: string) => {
+    flashSub(sub.topic, srcTopic, String(payload), i);
   });
 });
 
@@ -357,21 +377,13 @@ buildGrid();
 buildSubChips();
 updateTree();
 
-// default groove so the demo looks alive on load
 const DEFAULT_GROOVE: boolean[][] = [
-  // kick: four-on-the-floor
   [true,false,false,false, true,false,false,false, true,false,false,false, true,false,false,false],
-  // snare: backbeat
   [false,false,false,false, true,false,false,false, false,false,false,false, true,false,false,false],
-  // hihat: eighth notes
   [true,false,true,false, true,false,true,false, true,false,true,false, true,false,true,false],
-  // vel: accents
   [false,false,false,false, false,false,false,false, true,false,false,false, false,false,false,false],
-  // bass
   [true,false,false,true, false,false,true,false, true,false,false,true, false,false,false,false],
-  // synth
   [false,false,false,false, true,false,false,false, false,false,false,false, true,false,false,true],
-  // pad
   [false,false,false,false, false,false,false,false, false,false,true,false, false,false,false,false],
 ];
 for (let ri = 0; ri < DEFAULT_GROOVE.length && ri < TRACKS.length; ri++) {
