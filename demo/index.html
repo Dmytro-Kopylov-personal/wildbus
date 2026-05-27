@@ -3,21 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>wildbus — topic pub/sub</title>
+  <title>wildbus — sequencer</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
     <header>
       <h1>wildbus</h1>
-      <span class="subtitle">typed topic pub/sub with wildcards</span>
+      <span class="subtitle">topic sequencer</span>
+
+      <div class="transport">
+        <button id="btn-play" class="play-btn">▶</button>
+        <button id="btn-stop" class="stop-btn">■</button>
+        <div class="bpm-group">
+          <label>bpm</label>
+          <input id="bpm-input" type="number" value="120" min="40" max="300" step="1" />
+        </div>
+        <div class="swing-group">
+          <label>swing</label>
+          <input id="swing-input" type="range" value="120" min="40" max="300" step="1" style="display:none" />
+        </div>
+        <span id="step-indicator" class="step-indicator">step 0 / 16</span>
+      </div>
+
       <div class="header-actions">
-        <button id="auto-btn">▶ auto mode</button>
-        <label class="speed-label">
-          <span>every</span>
-          <input id="auto-speed" type="number" value="800" min="100" step="100" style="width:50px" />
-          <span>ms</span>
-        </label>
+        <button id="btn-clear">clear</button>
+        <button id="btn-random">random</button>
       </div>
     </header>
 
@@ -27,42 +38,21 @@
         <div id="tree-container"></div>
       </section>
 
-      <section id="center-panel">
-        <div id="stats-bar">
-          <div class="stat"><span class="stat-label">listeners</span><span class="stat-value" id="stat-listeners">0</span></div>
-          <div class="stat"><span class="stat-label">messages</span><span class="stat-value" id="stat-messages">0</span></div>
-          <div class="stat"><span class="stat-label">last topic</span><span class="stat-value" id="stat-topic">—</span></div>
-        </div>
-        <div id="subscriber-header">
-          <h2>subscribers</h2>
-          <button id="add-sub-btn" title="add subscriber">+ add</button>
-          <div id="add-sub-row" style="display:none">
-            <input id="add-sub-topic" placeholder="topic (e.g. alerts/+/critical)" autocomplete="off" spellcheck="false" />
-            <input id="add-sub-icon" placeholder="icon" maxlength="2" style="width:44px" autocomplete="off" />
-            <button id="add-sub-confirm">✓</button>
-            <button id="add-sub-cancel" class="ghost">✗</button>
+      <section id="seq-panel">
+        <div id="sequencer">
+          <div class="row-labels" id="row-labels"></div>
+          <div class="grid-scroll">
+            <div class="step-numbers" id="step-numbers"></div>
+            <div class="grid" id="grid"></div>
           </div>
         </div>
-        <div id="subscriber-grid"></div>
+
+        <div id="subscriber-strip">
+          <h2>subscribers</h2>
+          <div id="subscriber-list"></div>
+        </div>
       </section>
     </main>
-
-    <footer>
-      <div id="publish-bar">
-        <input id="pub-topic" placeholder="topic (e.g. sensors/kitchen/temp)" autocomplete="off" spellcheck="false" />
-        <input id="pub-payload" placeholder="payload" autocomplete="off" spellcheck="false" />
-        <button id="pub-btn">publish</button>
-      </div>
-      <div id="presets">
-        <button data-topic="system/cpu" data-payload="72%">cpu</button>
-        <button data-topic="system/memory" data-payload="8.2 GB">memory</button>
-        <button data-topic="sensors/kitchen/temp" data-payload="23.4°C">kitchen temp</button>
-        <button data-topic="sensors/living/temp" data-payload="21.1°C">living temp</button>
-        <button data-topic="logs/error/db" data-payload="connection timeout">db error</button>
-        <button data-topic="logs/info/http" data-payload="GET /api 200">http log</button>
-        <button id="preset-burst">⚡ burst</button>
-      </div>
-    </footer>
   </div>
   <script type="module" src="main.ts"></script>
 </body>

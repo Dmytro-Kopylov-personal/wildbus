@@ -1,94 +1,123 @@
 import { WildBus } from '../src/wildbus.js';
 import { buildTree, renderTree } from './tree-viz.js';
-import type { Subscriber } from './subscribers.js';
 
-// ── icons for auto-assignment ──
+// ── sequencer config ──
 
-const ICONS = ['🖥', '🌡', '📡', '🚨', '📋', '🌐', '🔥', '🧠', '💾', '📶', '👤', '🔔', '⚙️', '📊', '🗄', '🔐', '💬', '🕐'];
+const STEPS = 16;
 
-function randomIcon(): string {
-  return ICONS[Math.floor(Math.random() * ICONS.length)]!;
+interface Track {
+  topic: string;
+  label: string;
+  color: string; // CSS var name
+  steps: boolean[]; // length STEPS
 }
+
+const TRACKS: Track[] = [
+  { topic: 'drums/kick',     label: 'kick',     color: 'var(--red)',    steps: [] },
+  { topic: 'drums/snare',    label: 'snare',    color: 'var(--orange)', steps: [] },
+  { topic: 'drums/hihat',    label: 'hihat',    color: 'var(--yellow)', steps: [] },
+  { topic: 'bass/note',      label: 'bass',     color: 'var(--cyan)',   steps: [] },
+  { topic: 'lead/synth',     label: 'synth',    color: 'var(--accent)', steps: [] },
+  { topic: 'lead/pad',       label: 'pad',      color: 'var(--purple)', steps: [] },
+];
+
+// init empty steps
+for (const t of TRACKS) {
+  t.steps = new Array(STEPS).fill(false);
+}
+
+interface SubDef {
+  topic: string;
+  color: string;
+}
+
+const SUBS: SubDef[] = [
+  { topic: 'drums/+',   color: 'var(--red)' },
+  { topic: 'drums/#',   color: 'var(--orange)' },
+  { topic: 'bass/#',    color: 'var(--cyan)' },
+  { topic: 'lead/#',    color: 'var(--accent)' },
+  { topic: '#',         color: 'var(--purple)' },
+];
 
 // ── state ──
 
 const bus = new WildBus();
-let messageCount = 0;
-const subs: Subscriber[] = [];
 const topicSet = new Set<string>();
-const unsubFns = new Map<string, () => void>();
+let currentStep = 0;
+let playing = false;
+let timer: ReturnType<typeof setInterval> | null = null;
+let bpm = 120;
+let totalMessages = 0;
+const trackCounts = new Array(TRACKS.length).fill(0);
+const subCounts = new Array(SUBS.length).fill(0);
 
-let autoTimer: ReturnType<typeof setInterval> | null = null;
-let autoSpeed = 800; // ms between publishes
+// sub chips track their last payload + flash timeout
+const subStates = new Map<string, { payload: string; timeout: ReturnType<typeof setTimeout> | null }>();
 
-// ── auto-mode data ──
-
-const AUTO_TOPICS = [
-  'system/cpu', 'system/memory', 'system/disk', 'system/network',
-  'sensors/kitchen/temp', 'sensors/kitchen/humidity',
-  'sensors/living/temp', 'sensors/living/humidity',
-  'sensors/bedroom/temp', 'sensors/bedroom/humidity',
-  'sensors/bathroom/temp', 'sensors/bathroom/humidity',
-  'logs/info/db', 'logs/info/http', 'logs/info/auth',
-  'logs/warn/db', 'logs/warn/cache',
-  'logs/error/db', 'logs/error/http', 'logs/error/auth',
-  'users/1/activity', 'users/2/activity', 'users/3/activity',
-  'users/1/status', 'users/2/status',
-  'notifications/email', 'notifications/sms', 'notifications/push',
-];
-
-function randomPayload(topic: string): string {
-  if (topic.startsWith('system/cpu')) return `${20 + Math.floor(Math.random() * 80)}%`;
-  if (topic.startsWith('system/memory')) return `${(Math.random() * 16).toFixed(1)} GB`;
-  if (topic.startsWith('system/disk')) return `${(Math.random() * 500).toFixed(0)} GB free`;
-  if (topic.startsWith('system/network')) return `${(Math.random() * 1000).toFixed(0)} Mbps`;
-  if (topic.includes('/temp')) return `${(15 + Math.random() * 15).toFixed(1)}°C`;
-  if (topic.includes('/humidity')) return `${(30 + Math.random() * 50).toFixed(0)}%`;
-  if (topic.startsWith('logs/error')) return ['timeout', 'connection refused', 'quota exceeded', 'invalid token', 'deadlock detected'][Math.floor(Math.random() * 5)]!;
-  if (topic.startsWith('logs/warn')) return ['slow query', 'cache miss', 'retry 3/5', 'memory pressure', 'gc pause'][Math.floor(Math.random() * 5)]!;
-  if (topic.startsWith('logs/info')) return ['GET 200', 'POST 201', 'connected', 'sync complete', 'health OK'][Math.floor(Math.random() * 5)]!;
-  if (topic.startsWith('users/') && topic.endsWith('/activity')) return ['login', 'logout', 'pageview', 'click', 'scroll'][Math.floor(Math.random() * 5)]!;
-  if (topic.startsWith('users/') && topic.endsWith('/status')) return ['online', 'idle', 'offline'][Math.floor(Math.random() * 3)]!;
-  if (topic.startsWith('notifications')) return ['sent', 'delivered', 'read', 'bounced'][Math.floor(Math.random() * 4)]!;
-  return 'OK';
-}
-
-// ── DOM ──
+// ── DOM refs ──
 
 const treeContainer = document.getElementById('tree-container')!;
-const subGrid = document.getElementById('subscriber-grid')!;
-const statListeners = document.getElementById('stat-listeners')!;
-const statMessages = document.getElementById('stat-messages')!;
-const statTopic = document.getElementById('stat-topic')!;
-const pubTopic = document.getElementById('pub-topic') as HTMLInputElement;
-const pubPayload = document.getElementById('pub-payload') as HTMLInputElement;
-const pubBtn = document.getElementById('pub-btn')!;
-const addBtn = document.getElementById('add-sub-btn')!;
-const addRow = document.getElementById('add-sub-row')!;
-const addTopic = document.getElementById('add-sub-topic') as HTMLInputElement;
-const addIcon = document.getElementById('add-sub-icon') as HTMLInputElement;
-const addConfirm = document.getElementById('add-sub-confirm')!;
-const addCancel = document.getElementById('add-sub-cancel')!;
-const autoBtn = document.getElementById('auto-btn')!;
-const autoSpeedInput = document.getElementById('auto-speed') as HTMLInputElement;
+const rowLabels = document.getElementById('row-labels')!;
+const stepNumbers = document.getElementById('step-numbers')!;
+const grid = document.getElementById('grid')!;
+const subList = document.getElementById('subscriber-list')!;
+const btnPlay = document.getElementById('btn-play') as HTMLButtonElement;
+const btnStop = document.getElementById('btn-stop') as HTMLButtonElement;
+const btnClear = document.getElementById('btn-clear')!;
+const btnRandom = document.getElementById('btn-random')!;
+const bpmInput = document.getElementById('bpm-input') as HTMLInputElement;
+const stepIndicator = document.getElementById('step-indicator')!;
 
-// ── toast ──
+// ── build UI ──
 
-function toast(msg: string) {
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1500);
+function buildRowLabels() {
+  rowLabels.innerHTML = TRACKS.map((t, i) =>
+    `<div class="row-label row-${i}" data-row="${i}">
+      <span class="dot" style="background:${t.color}"></span>${t.label}
+      <span class="row-count" id="row-count-${i}">0</span>
+    </div>`
+  ).join('');
 }
 
-// ── flash ──
+function buildStepNumbers() {
+  stepNumbers.innerHTML = new Array(STEPS).fill(0).map((_, i) =>
+    `<div class="step-num" data-step="${i}">${i + 1}</div>`
+  ).join('');
+}
 
-function flashCard(subscriberTopic: string) {
-  const card = document.querySelector(`.subscriber-card[data-topic="${CSS.escape(subscriberTopic)}"]`);
-  if (!card) return;
-  card.classList.add('flash');
-  setTimeout(() => card.classList.remove('flash'), 350);
+function buildGrid() {
+  grid.innerHTML = TRACKS.map((t, ri) =>
+    `<div class="grid-row row-${ri}" data-row="${ri}">
+      ${t.steps.map((on, ci) =>
+        `<div class="grid-cell${on ? ' on' : ''}" data-row="${ri}" data-step="${ci}"></div>`
+      ).join('')}
+    </div>`
+  ).join('');
+
+  // click handled via delegation on #grid
+}
+
+function buildSubChips() {
+  subList.innerHTML = SUBS.map((s, i) =>
+    `<div class="sub-chip sub-${i}" data-topic="${s.topic.replace(/"/g, '&quot;')}">
+      <span class="dot" style="background:${s.color}"></span>
+      <span class="chip-topic">${s.topic}</span>
+      <span class="chip-last"></span>
+    </div>`
+  ).join('');
+}
+
+function updateTopicSet() {
+  topicSet.clear();
+  for (const t of TRACKS) topicSet.add(t.topic);
+  for (const s of SUBS) topicSet.add(s.topic);
+}
+
+// ── tree ──
+
+function updateTree() {
+  const root = buildTree(topicSet);
+  renderTree(treeContainer, root);
 }
 
 function flashTreeNodes(publishedTopic: string) {
@@ -99,242 +128,217 @@ function flashTreeNodes(publishedTopic: string) {
     const node = document.querySelector(`.tree-node[data-path="${CSS.escape(path)}"]`);
     if (node) {
       node.classList.add('active');
-      setTimeout(() => node.classList.remove('active'), 800);
+      setTimeout(() => node.classList.remove('active'), 600);
     }
   }
 }
 
-// ── render ──
+// ── subscribers ──
 
-function updateTree() {
-  const root = buildTree(topicSet);
-  renderTree(treeContainer, root);
-}
+function flashSub(topic: string, publishedTopic: string, subIndex: number) {
+  const chip = document.querySelector(`.sub-chip[data-topic="${CSS.escape(topic)}"]`);
+  if (!chip) return;
 
-function updateSubscribers() {
-  subGrid.innerHTML = subs
-    .map(
-      (s, i) => `
-    <div class="subscriber-card" data-topic="${s.topic.replace(/"/g, '&quot;')}">
-      <button class="card-remove" data-index="${i}" title="remove">×</button>
-      <span class="card-icon">${s.icon}</span>
-      <div class="card-topic">${s.topic}</div>
-      <div class="card-last">waiting…</div>
-    </div>`
-    )
-    .join('');
+  subCounts[subIndex]++;
 
-  // wire remove buttons
-  subGrid.querySelectorAll('.card-remove').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const idx = Number((btn as HTMLElement).dataset.index);
-      removeSubscriber(idx);
-    });
-  });
-}
+  const short = publishedTopic.split('/').pop() || publishedTopic;
 
-function updateStats(topic?: string) {
-  statListeners.textContent = String(bus.listenerCount);
-  statMessages.textContent = String(messageCount);
-  if (topic) {
-    statTopic.textContent = topic;
-    statTopic.classList.add('hit');
-    setTimeout(() => statTopic.classList.remove('hit'), 300);
+  // update last-value + count
+  const lastEl = chip.querySelector('.chip-last');
+  if (lastEl) {
+    lastEl.textContent = `${short} (${subCounts[subIndex]})`;
   }
+
+  // flash
+  const state = subStates.get(topic);
+  if (state?.timeout) clearTimeout(state.timeout);
+  chip.classList.add('flash');
+  const t = setTimeout(() => chip.classList.remove('flash'), 250);
+  subStates.set(topic, { payload: short, timeout: t });
 }
 
-// ── subscriber management ──
+// ── counters ──
 
-function addSubscriber(topic: string, icon?: string) {
-  topic = topic.trim();
-  if (!topic || topicSet.has(topic)) return;
+function updateTrackCounter(ri: number) {
+  const el = document.getElementById(`row-count-${ri}`);
+  if (el) el.textContent = String(trackCounts[ri]);
+}
 
-  const iconStr = icon || randomIcon();
-  const unsub = bus.subscribe(topic, (_payload: unknown, srcTopic: string) => {
-    flashCard(topic);
-    const card = document.querySelector(`.subscriber-card[data-topic="${CSS.escape(topic)}"]`);
-    if (card) {
-      const lastEl = card.querySelector('.card-last');
-      if (lastEl) {
-        lastEl.innerHTML = `<span class="val">${typeof _payload === 'string' ? _payload : JSON.stringify(_payload)}</span> ← <span class="src">${srcTopic}</span>`;
-      }
+function updateTotalCounter() {
+  stepIndicator.textContent = `msgs ${totalMessages} · step ${currentStep + 1} / ${STEPS}`;
+}
+
+// ── row labels ──
+
+function flashRowLabel(ri: number) {
+  const label = document.querySelector(`.row-label[data-row="${ri}"]`);
+  if (!label) return;
+  label.classList.add('firing');
+  setTimeout(() => label.classList.remove('firing'), 100);
+}
+
+// ── playhead ──
+
+function movePlayhead(step: number, advance: boolean) {
+  // clear previous
+  grid.querySelectorAll('.grid-cell.playhead').forEach(c => c.classList.remove('playhead'));
+  document.querySelectorAll('.step-num.active').forEach(n => n.classList.remove('active'));
+
+  // set new
+  const cells = grid.querySelectorAll(`.grid-cell[data-step="${step}"]`);
+  cells.forEach(c => {
+    c.classList.add('playhead');
+    if (advance) {
+      c.classList.add('playhead-advance');
+      setTimeout(() => c.classList.remove('playhead-advance'), 100);
     }
   });
 
-  unsubFns.set(topic, unsub);
-  subs.push({ topic, icon: iconStr });
-  topicSet.add(topic);
-  updateTree();
-  updateSubscribers();
-  updateStats();
+  const num = document.querySelector(`.step-num[data-step="${step}"]`);
+  if (num) num.classList.add('active');
+
+  stepIndicator.textContent = `step ${step + 1} / ${STEPS}`;
 }
 
-function removeSubscriber(index: number) {
-  const sub = subs[index];
-  if (!sub) return;
-  unsubFns.get(sub.topic)?.();
-  unsubFns.delete(sub.topic);
-  subs.splice(index, 1);
-  topicSet.delete(sub.topic);
-  updateTree();
-  updateSubscribers();
-  updateStats();
-}
+// ── sequencer tick ──
 
-function seedSubscribers(defs: Subscriber[]) {
-  for (const def of defs) {
-    if (topicSet.has(def.topic)) continue;
-    const unsub = bus.subscribe(def.topic, (_payload: unknown, srcTopic: string) => {
-      flashCard(def.topic);
-      const card = document.querySelector(`.subscriber-card[data-topic="${CSS.escape(def.topic)}"]`);
-      if (card) {
-        const lastEl = card.querySelector('.card-last');
-        if (lastEl) {
-          lastEl.innerHTML = `<span class="val">${typeof _payload === 'string' ? _payload : JSON.stringify(_payload)}</span> ← <span class="src">${srcTopic}</span>`;
-        }
-      }
-    });
-    unsubFns.set(def.topic, unsub);
-    subs.push(def);
-    topicSet.add(def.topic);
+let lastTickTime = 0;
+
+function tick(step: number) {
+  const now = performance.now();
+  const advance = lastTickTime > 0;
+  lastTickTime = now;
+
+  currentStep = step;
+  movePlayhead(step, advance);
+
+  // publish for active cells in this column
+  for (let ri = 0; ri < TRACKS.length; ri++) {
+    const track = TRACKS[ri]!;
+    if (track.steps[step]) {
+      totalMessages++;
+      trackCounts[ri]++;
+      bus.publish(track.topic, `hit@${step + 1}`);
+      flashTreeNodes(track.topic);
+      flashRowLabel(ri);
+      updateTrackCounter(ri);
+    }
   }
-  updateTree();
-  updateSubscribers();
-  updateStats();
+  updateTotalCounter();
+
+  // advance
+  currentStep = (step + 1) % STEPS;
 }
 
-// ── publish ──
+// ── transport ──
 
-function doPublish(topic: string, payload: string) {
-  messageCount++;
-  bus.publish(topic, payload);
-  flashTreeNodes(topic);
-  updateStats(topic);
+function stepIntervalMs(): number {
+  // one step = a sixteenth note at current BPM
+  return (60000 / bpm) / 4;
 }
 
-// ── auto mode ──
-
-function startAuto() {
-  if (autoTimer) return;
-  autoBtn.textContent = '⏸ stop auto';
-  autoBtn.classList.add('running');
-  autoTimer = setInterval(() => {
-    const topic = AUTO_TOPICS[Math.floor(Math.random() * AUTO_TOPICS.length)]!;
-    const payload = randomPayload(topic);
-    doPublish(topic, payload);
-  }, autoSpeed);
+function start() {
+  if (playing) return;
+  playing = true;
+  btnPlay.classList.add('playing');
+  btnPlay.textContent = '❚❚';
+  lastTickTime = 0;
+  tick(currentStep);
+  timer = setInterval(() => tick(currentStep), stepIntervalMs());
 }
 
-function stopAuto() {
-  if (!autoTimer) return;
-  clearInterval(autoTimer);
-  autoTimer = null;
-  autoBtn.textContent = '▶ auto mode';
-  autoBtn.classList.remove('running');
+function stop() {
+  if (!playing) return;
+  playing = false;
+  btnPlay.classList.remove('playing');
+  btnPlay.textContent = '▶';
+  if (timer) { clearInterval(timer); timer = null; }
+  movePlayhead(-1, false);
+  stepIndicator.textContent = `msgs ${totalMessages} · stopped`;
+  document.querySelectorAll('.grid-cell.playhead').forEach(c => c.classList.remove('playhead'));
+  document.querySelectorAll('.step-num.active').forEach(n => n.classList.remove('active'));
 }
 
-function toggleAuto() {
-  if (autoTimer) stopAuto();
-  else startAuto();
+function restartTimer() {
+  if (!playing) return;
+  if (timer) clearInterval(timer);
+  timer = setInterval(() => tick(currentStep), stepIntervalMs());
 }
 
-// ── init ──
+// ── grid actions ──
 
-// seed with initial subscribers that demo wildcards well
-seedSubscribers([
-  { topic: 'system/+', icon: '🖥' },
-  { topic: 'system/cpu', icon: '🔥' },
-  { topic: 'system/memory', icon: '🧠' },
-  { topic: 'sensors/+/temp', icon: '🌡' },
-  { topic: 'sensors/#', icon: '📡' },
-  { topic: 'logs/error/#', icon: '🚨' },
-  { topic: 'logs/#', icon: '📋' },
-  { topic: '#', icon: '🌐' },
-]);
+function clearGrid() {
+  for (const t of TRACKS) t.steps.fill(false);
+  buildGrid();
+}
+
+function randomGrid() {
+  const density = 0.3;
+  for (const t of TRACKS) {
+    for (let i = 0; i < STEPS; i++) {
+      t.steps[i] = Math.random() < density;
+    }
+  }
+  buildGrid();
+}
 
 // ── events ──
 
-pubBtn.addEventListener('click', () => {
-  const topic = pubTopic.value.trim();
-  const payload = pubPayload.value.trim();
-  if (!topic || !payload) return;
-  doPublish(topic, payload);
-  pubTopic.select();
-  pubPayload.select();
+btnPlay.addEventListener('click', () => {
+  if (playing) stop(); else start();
 });
 
-pubPayload.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') pubBtn.click();
+btnStop.addEventListener('click', stop);
+
+btnClear.addEventListener('click', () => {
+  if (playing) stop();
+  clearGrid();
 });
 
-// add subscriber UI
-
-addBtn.addEventListener('click', () => {
-  addRow.style.display = 'flex';
-  addTopic.focus();
+btnRandom.addEventListener('click', () => {
+  if (playing) stop();
+  randomGrid();
 });
 
-addCancel.addEventListener('click', () => {
-  addRow.style.display = 'none';
-  addTopic.value = '';
-  addIcon.value = '';
+bpmInput.addEventListener('change', () => {
+  bpm = Math.max(40, Math.min(300, Number(bpmInput.value) || 120));
+  bpmInput.value = String(bpm);
+  restartTimer();
 });
 
-addConfirm.addEventListener('click', () => {
-  const topic = addTopic.value.trim();
-  if (!topic) return;
-  addSubscriber(topic, addIcon.value.trim() || undefined);
-  addTopic.value = '';
-  addIcon.value = '';
-  addRow.style.display = 'none';
-});
-
-addTopic.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') addConfirm.click();
-});
-
-// auto mode
-
-autoBtn.addEventListener('click', toggleAuto);
-
-autoSpeedInput.addEventListener('change', () => {
-  autoSpeed = Math.max(100, Number(autoSpeedInput.value) || 800);
-  if (autoTimer) {
-    stopAuto();
-    startAuto();
+// keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (playing) stop(); else start();
   }
 });
 
-// presets
+// ── subscribe (update UI on receive) ──
 
-document.getElementById('presets')!.addEventListener('click', (e) => {
-  const btn = e.target as HTMLButtonElement;
-  if (btn.tagName !== 'BUTTON') return;
-
-  if (btn.id === 'preset-burst') {
-    const messages: [string, string][] = [
-      ['system/cpu', '94%'],
-      ['system/cpu', '97% spike'],
-      ['system/memory', '7.1 GB'],
-      ['sensors/kitchen/temp', '24.1°C'],
-      ['sensors/living/temp', '21.5°C'],
-      ['logs/error/db', 'pool exhausted'],
-      ['logs/info/http', 'POST /api 201'],
-      ['logs/error/db', 'retry failed'],
-      ['system/cpu', '62%'],
-    ];
-    let delay = 0;
-    for (const [topic, payload] of messages) {
-      setTimeout(() => doPublish(topic!, payload!), delay);
-      delay += 120;
-    }
-    return;
-  }
-
-  const topic = btn.dataset.topic!;
-  const payload = btn.dataset.payload!;
-  pubTopic.value = topic;
-  pubPayload.value = payload;
-  doPublish(topic, payload);
+SUBS.forEach((sub, i) => {
+  bus.subscribe(sub.topic, (_payload: unknown, srcTopic: string) => {
+    flashSub(sub.topic, srcTopic, i);
+  });
 });
+
+// ── grid click delegation ──
+
+grid.addEventListener('click', (e) => {
+  const cell = (e.target as HTMLElement).closest('.grid-cell') as HTMLElement | null;
+  if (!cell) return;
+  const ri = Number(cell.dataset.row);
+  const ci = Number(cell.dataset.step);
+  if (isNaN(ri) || isNaN(ci)) return;
+  TRACKS[ri]!.steps[ci] = !TRACKS[ri]!.steps[ci];
+  cell.classList.toggle('on');
+});
+
+// ── init ──
+
+updateTopicSet();
+buildRowLabels();
+buildStepNumbers();
+buildGrid();
+buildSubChips();
+updateTree();
