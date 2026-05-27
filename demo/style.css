@@ -22,6 +22,7 @@
   --cyan: #22d3ee;
   --orange: #fb923c;
   --pink: #f472b6;
+  --pink-glow: rgba(244, 114, 182, 0.3);
   --radius: 4px;
   --font: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
 }
@@ -356,9 +357,10 @@ main {
 .row-0 .grid-cell.on { background: var(--red); }
 .row-1 .grid-cell.on { background: var(--orange); }
 .row-2 .grid-cell.on { background: var(--yellow); }
-.row-3 .grid-cell.on { background: var(--cyan); }
-.row-4 .grid-cell.on { background: var(--accent); }
-.row-5 .grid-cell.on { background: var(--purple); }
+.row-3 .grid-cell.on { background: var(--pink); }
+.row-4 .grid-cell.on { background: var(--cyan); }
+.row-5 .grid-cell.on { background: var(--accent); }
+.row-6 .grid-cell.on { background: var(--purple); }
 
 /* playhead column */
 .grid-cell.playhead {

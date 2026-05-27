@@ -13,12 +13,13 @@ interface Track {
 }
 
 const TRACKS: Track[] = [
-  { topic: 'drums/kick',     label: 'kick',     color: 'var(--red)',    steps: [] },
-  { topic: 'drums/snare',    label: 'snare',    color: 'var(--orange)', steps: [] },
-  { topic: 'drums/hihat',    label: 'hihat',    color: 'var(--yellow)', steps: [] },
-  { topic: 'bass/note',      label: 'bass',     color: 'var(--cyan)',   steps: [] },
-  { topic: 'lead/synth',     label: 'synth',    color: 'var(--accent)', steps: [] },
-  { topic: 'lead/pad',       label: 'pad',      color: 'var(--purple)', steps: [] },
+  { topic: 'drums/kick',            label: 'kick',     color: 'var(--red)',    steps: [] },
+  { topic: 'drums/snare',           label: 'snare',    color: 'var(--orange)', steps: [] },
+  { topic: 'drums/hihat',           label: 'hihat',    color: 'var(--yellow)', steps: [] },
+  { topic: 'drums/kick/velocity',   label: 'vel',      color: 'var(--pink)',   steps: [] },
+  { topic: 'bass/note',             label: 'bass',     color: 'var(--cyan)',   steps: [] },
+  { topic: 'lead/synth',            label: 'synth',    color: 'var(--accent)', steps: [] },
+  { topic: 'lead/pad',              label: 'pad',      color: 'var(--purple)', steps: [] },
 ];
 
 // init empty steps
