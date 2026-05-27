@@ -1,0 +1,32 @@
+{
+  "name": "wildbus",
+  "version": "0.1.0",
+  "description": "Typed topic-based pub/sub with MQTT-style wildcards for complex UIs",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["pubsub", "event-bus", "topic", "wildcard", "mqtt", "ui"],
+  "license": "MIT",
+  "author": "Dmytro Kopylov <kopylov.dmytro@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dmytro-Kopylov-personal/wildbus"
+  },
+  "devDependencies": {
+    "typescript": "^5.5",
+    "vitest": "^2.0"
+  }
+}

@@ -1,0 +1,64 @@
+# wildbus
+
+Typed topic-based pub/sub with MQTT-style wildcards for complex UIs.
+
+```ts
+import { WildBus } from 'wildbus';
+
+const bus = new WildBus();
+
+// Subscribe with + (single-level) and # (multi-level) wildcards
+bus.subscribe<User>('users/+/status', (user, topic) => {
+  console.log(`${user.name} changed status`);
+});
+
+bus.publish<User>('users/42/status', { id: 42, name: 'Alice' });
+```
+
+## Install
+
+```bash
+npm install wildbus
+```
+
+## API
+
+### `subscribe<T>(topic, listener) => Unsubscribe`
+
+Register a listener for a topic pattern. Returns a function that unsubscribes when called.
+
+**Wildcards:**
+- `+` matches exactly one level (`users/+/status` matches `users/42/status`)
+- `#` matches zero or more levels and must be the final segment (`log/#` matches `log`, `log/error`, `log/error/db`)
+
+### `publish<T>(topic, payload)`
+
+Send a payload to all listeners whose subscription matches the topic. If a listener throws, delivery continues to remaining listeners — the error goes to `onError` if configured, or `console.error`.
+
+### `onError(handler)`
+
+Register a handler for listener exceptions: `(err, topic, listener) => void`.
+
+### `unsubscribe(topic, listener)`
+
+Remove a specific listener from a specific topic.
+
+### `removeListener(listener)`
+
+Remove a listener from **all** topics it's subscribed to.
+
+### `listenerCount`
+
+Total number of registration entries.
+
+### `clear()`
+
+Remove all subscriptions.
+
+## Why not EventEmitter?
+
+Wildbus routes by **topic pattern**, not channel name. One publish can hit subscribers on `exact/match`, `category/+`, and `root/#` — all in a single call. That composability is what makes it useful for complex UIs where components care about overlapping slices of the state tree.
+
+## License
+
+MIT
