@@ -50,6 +50,7 @@ let bpm = 120;
 let totalMessages = 0;
 const trackCounts = new Array(TRACKS.length).fill(0);
 const subCounts = new Array(SUBS.length).fill(0);
+const treeHitCounts = new Map<string, number>();
 
 // sub chips track their last payload + flash timeout
 const subStates = new Map<string, { payload: string; timeout: ReturnType<typeof setTimeout> | null }>();
@@ -100,9 +101,12 @@ function buildGrid() {
 function buildSubChips() {
   subList.innerHTML = SUBS.map((s, i) =>
     `<div class="sub-chip sub-${i}" data-topic="${s.topic.replace(/"/g, '&quot;')}">
-      <span class="dot" style="background:${s.color}"></span>
-      <span class="chip-topic">${s.topic}</span>
-      <span class="chip-last"></span>
+      <div class="chip-dot-row">
+        <span class="dot" style="background:${s.color}"></span>
+        <span class="chip-topic">${s.topic}</span>
+      </div>
+      <span class="chip-count" id="sub-count-${i}">0</span>
+      <span class="chip-last">—</span>
     </div>`
   ).join('');
 }
@@ -117,12 +121,19 @@ function updateTopicSet() {
 
 function updateTree() {
   const root = buildTree(topicSet);
-  renderTree(treeContainer, root);
+  renderTree(treeContainer, root, treeHitCounts);
 }
 
 function flashTreeNodes(publishedTopic: string) {
   const parts = publishedTopic.split('/');
-  document.querySelectorAll('.tree-node.active').forEach(n => n.classList.remove('active'));
+  // increment hit counts along the path
+  for (let i = 0; i <= parts.length; i++) {
+    const path = parts.slice(0, i).join('/') || 'root';
+    treeHitCounts.set(path, (treeHitCounts.get(path) ?? 0) + 1);
+  }
+  // rebuild tree to show updated counts
+  updateTree();
+  // highlight matching path
   for (let i = 0; i <= parts.length; i++) {
     const path = parts.slice(0, i).join('/') || 'root';
     const node = document.querySelector(`.tree-node[data-path="${CSS.escape(path)}"]`);
@@ -143,11 +154,13 @@ function flashSub(topic: string, publishedTopic: string, subIndex: number) {
 
   const short = publishedTopic.split('/').pop() || publishedTopic;
 
-  // update last-value + count
+  // update count
+  const countEl = document.getElementById(`sub-count-${subIndex}`);
+  if (countEl) countEl.textContent = String(subCounts[subIndex]);
+
+  // update last-hit label
   const lastEl = chip.querySelector('.chip-last');
-  if (lastEl) {
-    lastEl.textContent = `${short} (${subCounts[subIndex]})`;
-  }
+  if (lastEl) lastEl.textContent = short;
 
   // flash
   const state = subStates.get(topic);

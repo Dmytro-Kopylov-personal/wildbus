@@ -214,7 +214,7 @@ main {
   display: flex;
   align-items: center;
   gap: 3px;
-  padding: 1px 4px;
+  padding: 1px 6px;
   border-radius: 2px;
   font-size: 11px;
 }
@@ -222,7 +222,20 @@ main {
 .tree-label .segment { color: var(--text); }
 .tree-label .wildcard-plus { color: var(--yellow); }
 .tree-label .wildcard-hash { color: var(--purple); }
-.tree-label .sub-count { color: var(--text-dim); font-size: 9px; margin-left: 3px; }
+.tree-label .sub-count { color: var(--text-dim); font-size: 9px; margin-left: 4px; opacity: 0.6; }
+
+.tree-label .hit-count {
+  margin-left: auto;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  min-width: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── sequencer panel ── */
 
@@ -368,7 +381,8 @@ main {
 #subscriber-strip {
   border-top: 1px solid var(--border);
   background: var(--surface);
-  padding: 8px 14px;
+  padding: 10px 14px;
+  min-height: 100px;
 }
 
 #subscriber-strip h2 {
@@ -376,45 +390,82 @@ main {
   text-transform: uppercase;
   letter-spacing: 1.5px;
   color: var(--text-dim);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 #subscriber-list {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .sub-chip {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 8px 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+  transition: border-color 0.1s, box-shadow 0.1s, transform 0.1s, background 0.1s;
+  min-width: 0;
+}
+
+.sub-chip .chip-dot-row {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 3px 10px;
-  font-size: 10px;
-  color: var(--text-dim);
-  transition: border-color 0.1s, box-shadow 0.1s, transform 0.1s, color 0.1s;
+}
+
+.sub-chip .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
 }
 
 .sub-chip .chip-topic {
-  max-width: 140px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+
+.sub-chip .chip-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.sub-chip .chip-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--text);
+  line-height: 1;
+  transition: color 0.1s;
+}
+
+.sub-chip .chip-last {
+  font-size: 9px;
+  color: var(--text-dim);
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .sub-chip.flash {
-  transform: scale(1.06);
-  transition: border-color 0s, box-shadow 0s, transform 0s, color 0s;
+  transform: scale(1.04);
+  box-shadow: 0 0 20px var(--accent-glow);
+  transition: border-color 0s, box-shadow 0s, transform 0s, background 0s;
 }
 
-.sub-chip .chip-last {
-  color: var(--green);
-  font-size: 9px;
-  max-width: 80px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.sub-chip.flash .chip-count {
+  color: var(--accent);
 }

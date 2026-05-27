@@ -32,12 +32,20 @@ export function buildTree(topics: Set<string>): TreeNode {
   return root;
 }
 
-export function renderTree(container: HTMLElement, root: TreeNode) {
+export function renderTree(container: HTMLElement, root: TreeNode, hitCounts?: Map<string, number>) {
   container.innerHTML = '';
-  renderNode(container, root, 0, 'root');
+  renderNode(container, root, 0, 'root', hitCounts);
 }
 
-function renderNode(parent: HTMLElement, node: TreeNode, depth: number, path: string) {
+function renderNode(
+  parent: HTMLElement,
+  node: TreeNode,
+  depth: number,
+  path: string,
+  hitCounts?: Map<string, number>,
+) {
+  const hits = hitCounts?.get(path) ?? 0;
+
   if (depth > 0) {
     const div = document.createElement('div');
     div.className = 'tree-node';
@@ -61,14 +69,19 @@ function renderNode(parent: HTMLElement, node: TreeNode, depth: number, path: st
     if (node.subscriberCount > 0) {
       const count = document.createElement('span');
       count.className = 'sub-count';
-      count.textContent = `(${node.subscriberCount})`;
+      count.textContent = `${node.subscriberCount} sub`;
       label.appendChild(count);
+    }
+
+    if (hits > 0) {
+      const hit = document.createElement('span');
+      hit.className = 'hit-count';
+      hit.textContent = String(hits);
+      label.appendChild(hit);
     }
 
     div.appendChild(label);
     parent.appendChild(div);
-
-    // Use this div as the next anchor
     parent = div;
   }
 
@@ -82,6 +95,6 @@ function renderNode(parent: HTMLElement, node: TreeNode, depth: number, path: st
   });
 
   for (const child of sorted) {
-    renderNode(parent, child, depth + 1, path ? `${path}/${child.segment}` : child.segment);
+    renderNode(parent, child, depth + 1, path ? `${path}/${child.segment}` : child.segment, hitCounts);
   }
 }
