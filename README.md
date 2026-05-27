@@ -77,7 +77,7 @@ Remove all subscriptions.
 
 ## How it works
 
-Wildbus stores subscriptions in a **topic trie**. Given these subscriptions:
+Wildbus stores subscriptions in a **topic trie**. The interactive demo uses a drum machine metaphor — tracks publish to topics like `drums/kick`, `bass/note`, `lead/synth`. Five wildcard subscribers listen in. Here's the trie those subscriptions produce:
 
 | subscription | subscriber |
 |---|---|
