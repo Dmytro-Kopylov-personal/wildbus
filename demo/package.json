@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build && touch ../docs/.nojekyll"
   },
   "devDependencies": {
     "vite": "^6.0"
