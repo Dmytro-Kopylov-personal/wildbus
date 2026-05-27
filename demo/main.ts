@@ -34,11 +34,11 @@ interface SubDef {
 }
 
 const SUBS: SubDef[] = [
-  { topic: 'drums/+',   color: 'var(--red)' },
-  { topic: 'drums/#',   color: 'var(--orange)' },
-  { topic: 'bass/#',    color: 'var(--cyan)' },
-  { topic: 'lead/#',    color: 'var(--accent)' },
-  { topic: '#',         color: 'var(--purple)' },
+  { topic: 'drums/+',   color: '#f87171' },
+  { topic: 'drums/#',   color: '#fb923c' },
+  { topic: 'bass/#',    color: '#22d3ee' },
+  { topic: 'lead/#',    color: '#60a5fa' },
+  { topic: '#',         color: '#a78bfa' },
 ];
 
 // ── state ──
