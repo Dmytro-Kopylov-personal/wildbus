@@ -130,6 +130,8 @@ Publishing `drums/kick` hits the exact path (`drums → kick`), the `+` wildcard
 
 The bus wrapper adds type generics, error isolation (one broken listener can't kill delivery), and idempotent unsubscribe.
 
+→ [Full lifecycle walkthrough](WHITEPAPER.md) — subscribe, publish fan-out, pooled set, type erasure, edge cases.
+
 ## Why not EventEmitter?
 
 Wildbus routes by **topic pattern**, not channel name. One publish can hit subscribers on `exact/match`, `category/+`, and `root/#` — all in a single call. That composability is what makes it useful for complex UIs where components care about overlapping slices of the state tree.
