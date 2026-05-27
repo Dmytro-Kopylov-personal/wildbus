@@ -356,3 +356,25 @@ buildStepNumbers();
 buildGrid();
 buildSubChips();
 updateTree();
+
+// default groove so the demo looks alive on load
+const DEFAULT_GROOVE: boolean[][] = [
+  // kick: four-on-the-floor
+  [true,false,false,false, true,false,false,false, true,false,false,false, true,false,false,false],
+  // snare: backbeat
+  [false,false,false,false, true,false,false,false, false,false,false,false, true,false,false,false],
+  // hihat: eighth notes
+  [true,false,true,false, true,false,true,false, true,false,true,false, true,false,true,false],
+  // vel: accents
+  [false,false,false,false, false,false,false,false, true,false,false,false, false,false,false,false],
+  // bass
+  [true,false,false,true, false,false,true,false, true,false,false,true, false,false,false,false],
+  // synth
+  [false,false,false,false, true,false,false,false, false,false,false,false, true,false,false,true],
+  // pad
+  [false,false,false,false, false,false,false,false, false,false,true,false, false,false,false,false],
+];
+for (let ri = 0; ri < DEFAULT_GROOVE.length && ri < TRACKS.length; ri++) {
+  TRACKS[ri]!.steps = [...DEFAULT_GROOVE[ri]!];
+}
+buildGrid();

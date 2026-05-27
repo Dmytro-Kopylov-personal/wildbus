@@ -1,6 +1,6 @@
 # wildbus
 
-Typed topic-based pub/sub with MQTT-style wildcards for complex UIs.
+Typed topic-based pub/sub with MQTT-style wildcards for complex UIs. Zero dependencies.
 
 ```ts
 import { WildBus } from 'wildbus';
@@ -14,6 +14,24 @@ bus.subscribe<User>('users/+/status', (user, topic) => {
 
 bus.publish<User>('users/42/status', { id: 42, name: 'Alice' });
 ```
+
+## Demo
+
+The repo includes an interactive sequencer demo that visualizes topic routing in real time — think drum machine meets pub/sub.
+
+```
+cd demo && npm install && npm run dev
+```
+
+![sequencer demo screenshot](demo/screenshot.png)
+
+- **6 tracks × 16 steps** — each track publishes to a topic (`drums/kick`, `lead/synth`, …)
+- **Wildcard subscribers** — watch `drums/+` vs `drums/#` diverge as nested topics fire
+- **Live topic tree** — hit-count badges show which branches are hot, paths highlight on each message
+- **Counters** — per-track and per-subscriber message tallies
+- Click cells while playing, randomize the grid, adjust BPM, or hit spacebar to start/stop
+
+The demo uses wildbus itself — same zero-dependency library, no framework.
 
 ## Install
 
