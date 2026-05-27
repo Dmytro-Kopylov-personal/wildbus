@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wildbus — topic pub/sub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>wildbus</h1>
+      <span class="subtitle">typed topic pub/sub with wildcards</span>
+    </header>
+
+    <main>
+      <section id="tree-panel">
+        <h2>topic tree</h2>
+        <div id="tree-container"></div>
+      </section>
+
+      <section id="center-panel">
+        <div id="stats-bar">
+          <div class="stat"><span class="stat-label">listeners</span><span class="stat-value" id="stat-listeners">0</span></div>
+          <div class="stat"><span class="stat-label">messages</span><span class="stat-value" id="stat-messages">0</span></div>
+          <div class="stat"><span class="stat-label">last topic</span><span class="stat-value" id="stat-topic">—</span></div>
+        </div>
+        <h2>subscribers</h2>
+        <div id="subscriber-grid"></div>
+      </section>
+    </main>
+
+    <footer>
+      <div id="publish-bar">
+        <input id="pub-topic" placeholder="topic (e.g. sensors/kitchen/temp)" autocomplete="off" spellcheck="false" />
+        <input id="pub-payload" placeholder="payload" autocomplete="off" spellcheck="false" />
+        <button id="pub-btn">publish</button>
+      </div>
+      <div id="presets">
+        <button data-topic="system/cpu" data-payload="72%">cpu</button>
+        <button data-topic="system/memory" data-payload="8.2 GB">memory</button>
+        <button data-topic="sensors/kitchen/temp" data-payload="23.4°C">kitchen temp</button>
+        <button data-topic="sensors/living/temp" data-payload="21.1°C">living temp</button>
+        <button data-topic="logs/error/db" data-payload="connection timeout">db error</button>
+        <button data-topic="logs/info/http" data-payload="GET /api 200">http log</button>
+        <button id="preset-burst">⚡ burst</button>
+      </div>
+    </footer>
+  </div>
+  <script type="module" src="main.ts"></script>
+</body>
+</html>
