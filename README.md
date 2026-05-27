@@ -15,6 +15,8 @@ bus.subscribe<User>('users/+/status', (user, topic) => {
 bus.publish<User>('users/42/status', { id: 42, name: 'Alice' });
 ```
 
+![bus transforming into a topic tree](wildbus.png)
+
 ## Demo
 
 The repo includes an interactive sequencer demo that visualizes topic routing in real time — think drum machine meets pub/sub.
