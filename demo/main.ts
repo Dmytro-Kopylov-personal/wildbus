@@ -1,5 +1,5 @@
 import { WildBus } from '../src/wildbus.js';
-import { buildTree, renderTree } from './tree-viz.js';
+import { buildTree, renderTree, type SubInfo } from './tree-viz.js';
 
 // ── sequencer config ──
 
@@ -163,7 +163,8 @@ function updateTopicSet() {
 
 function updateTree() {
   const root = buildTree(topicSet);
-  renderTree(treeContainer, root, treeHitCounts);
+  const subs: SubInfo[] = SUBS.map(s => ({ pattern: s.topic, color: s.color }));
+  renderTree(treeContainer, root, treeHitCounts, subs);
 }
 
 function flashTreeNodes(publishedTopic: string) {

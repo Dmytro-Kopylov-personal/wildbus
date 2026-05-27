@@ -5,6 +5,11 @@ export interface TreeNode {
   children: Map<string, TreeNode>;
 }
 
+export interface SubInfo {
+  pattern: string;
+  color: string;
+}
+
 export function buildTree(topics: Set<string>): TreeNode {
   const root: TreeNode = { segment: 'root', wildcard: null, subscriberCount: 0, children: new Map() };
 
@@ -32,9 +37,29 @@ export function buildTree(topics: Set<string>): TreeNode {
   return root;
 }
 
-export function renderTree(container: HTMLElement, root: TreeNode, hitCounts?: Map<string, number>) {
+function topicMatchesPattern(topic: string, pattern: string): boolean {
+  const tp = topic.split('/');
+  const pp = pattern.split('/');
+
+  for (let i = 0; i < pp.length; i++) {
+    const p = pp[i]!;
+    if (p === '#') return true;
+    if (i >= tp.length) return false;
+    if (p === '+') continue;
+    if (p !== tp[i]) return false;
+  }
+
+  return tp.length === pp.length;
+}
+
+export function renderTree(
+  container: HTMLElement,
+  root: TreeNode,
+  hitCounts?: Map<string, number>,
+  subs?: SubInfo[],
+) {
   container.innerHTML = '';
-  renderNode(container, root, 0, 'root', hitCounts);
+  renderNode(container, root, 0, 'root', hitCounts, subs);
 }
 
 function renderNode(
@@ -43,6 +68,7 @@ function renderNode(
   depth: number,
   path: string,
   hitCounts?: Map<string, number>,
+  subs?: SubInfo[],
 ) {
   const hits = hitCounts?.get(path) ?? 0;
 
@@ -73,6 +99,24 @@ function renderNode(
       label.appendChild(count);
     }
 
+    // subscriber coverage dots
+    if (subs && subs.length > 0) {
+      const dots = document.createElement('span');
+      dots.className = 'sub-dots';
+      let matched = 0;
+      for (const sub of subs) {
+        if (topicMatchesPattern(path, sub.pattern)) {
+          const dot = document.createElement('span');
+          dot.className = 'sub-dot';
+          dot.style.backgroundColor = sub.color;
+          dot.title = sub.pattern;
+          dots.appendChild(dot);
+          matched++;
+        }
+      }
+      if (matched > 0) label.appendChild(dots);
+    }
+
     if (hits > 0) {
       const hit = document.createElement('span');
       hit.className = 'hit-count';
@@ -85,7 +129,6 @@ function renderNode(
     parent = div;
   }
 
-  // Sort children: literals first, then +, then #
   const sorted = [...node.children.values()].sort((a, b) => {
     if (a.wildcard === '#') return 1;
     if (b.wildcard === '#') return -1;
@@ -95,6 +138,6 @@ function renderNode(
   });
 
   for (const child of sorted) {
-    renderNode(parent, child, depth + 1, path ? `${path}/${child.segment}` : child.segment, hitCounts);
+    renderNode(parent, child, depth + 1, path ? `${path}/${child.segment}` : child.segment, hitCounts, subs);
   }
 }

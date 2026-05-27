@@ -225,6 +225,20 @@ main {
 .tree-label .wildcard-hash { color: var(--purple); }
 .tree-label .sub-count { color: var(--text-dim); font-size: 9px; margin-left: 4px; opacity: 0.6; }
 
+.sub-dots {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.sub-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 4px currentColor;
+}
+
 .tree-label .hit-count {
   margin-left: auto;
   background: var(--accent);
