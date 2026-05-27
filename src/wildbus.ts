@@ -3,9 +3,12 @@ import { TopicTrie } from './trie.js';
 type Listener<T = unknown> = (payload: T, topic: string) => void;
 type Unsubscribe = () => void;
 
+const SPLIT = /\//;
+
 /** Typed topic-based pub/sub with MQTT-style `+` and `#` wildcards. */
 export class WildBus {
   private trie = new TopicTrie();
+  private _setPool: Set<Listener>[] = [];
 
   /**
    * Subscribe to a topic with wildcards.
@@ -32,7 +35,9 @@ export class WildBus {
    * If a listener throws, the error is caught and sent to `onError` — delivery continues.
    */
   publish<T>(topic: string, payload: T): void {
-    const listeners = this.trie.collect(topic);
+    const parts = topic.split(SPLIT);
+    const listeners = this._setPool.pop() ?? new Set<Listener>();
+    this.trie.collectInto(parts, listeners);
     for (const listener of listeners) {
       try {
         (listener as Listener<T>)(payload, topic);
@@ -45,6 +50,8 @@ export class WildBus {
         }
       }
     }
+    listeners.clear();
+    this._setPool.push(listeners);
   }
 
   private _onError: ((err: unknown, topic: string, listener: Listener) => void) | null = null;

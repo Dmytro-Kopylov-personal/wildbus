@@ -16,16 +16,21 @@ const SPLIT = /\//;
 /** Topic trie with MQTT-style `+` and `#` wildcards. */
 export class TopicTrie {
   private root = emptyNode();
+  private _size = 0;
 
   add(topic: string, listener: Listener): void {
     const node = this.ensure(topic);
+    const prev = node.listeners.size;
     node.listeners.add(listener);
+    if (node.listeners.size > prev) this._size++;
   }
 
   remove(topic: string, listener: Listener): boolean {
     const node = this.find(topic);
     if (!node) return false;
-    return node.listeners.delete(listener);
+    const deleted = node.listeners.delete(listener);
+    if (deleted) this._size--;
+    return deleted;
   }
 
   /** Remove a listener from ALL topics it's subscribed to (O(n) scan). */
@@ -33,36 +38,36 @@ export class TopicTrie {
     const stack: TrieNode[] = [this.root];
     while (stack.length) {
       const node = stack.pop()!;
-      node.listeners.delete(listener);
+      if (node.listeners.delete(listener)) this._size--;
       stack.push(...node.children.values());
       if (node.plus) stack.push(node.plus);
       if (node.hash) stack.push(node.hash);
     }
   }
 
-  /** Collect all listeners matching a concrete topic (no wildcards in the topic itself). */
+  /** Collect all listeners matching a concrete topic into a new Set. */
   collect(topic: string): Set<Listener> {
-    const parts = topic.split(SPLIT);
-    const result = new Set<Listener>();
+    return this.collectParts(topic.split(SPLIT));
+  }
+
+  /** Collect all listeners matching a pre-split topic into a new Set. */
+  collectParts(parts: readonly string[]): Set<Listener> {
+    return this.collectInto(parts, new Set<Listener>());
+  }
+
+  /** Append matching listeners into an existing set (avoids allocation). */
+  collectInto(parts: readonly string[], result: Set<Listener>): Set<Listener> {
     this.collectRecursive(this.root, parts, 0, result);
     return result;
   }
 
   get size(): number {
-    let count = 0;
-    const stack: TrieNode[] = [this.root];
-    while (stack.length) {
-      const node = stack.pop()!;
-      count += node.listeners.size;
-      stack.push(...node.children.values());
-      if (node.plus) stack.push(node.plus);
-      if (node.hash) stack.push(node.hash);
-    }
-    return count;
+    return this._size;
   }
 
   clear(): void {
     this.root = emptyNode();
+    this._size = 0;
   }
 
   // ── internals ──
