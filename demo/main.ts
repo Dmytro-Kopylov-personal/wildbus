@@ -83,7 +83,7 @@ function buildRowLabels() {
     `<div class="row-label row-${i}" data-row="${i}">
       <span class="dot" style="background:${t.color}"></span>
       <span class="row-label-text">${t.label}</span>
-      <input class="row-payload" id="row-payload-${i}" value="${t.payload.replace(/"/g, '&quot;')}" title="payload" spellcheck="false" />
+      <input class="row-payload" id="row-payload-${i}" data-row="${i}" value="${t.payload.replace(/"/g, '&quot;')}" title="payload" spellcheck="false" />
       <span class="row-count" id="row-count-${i}">0</span>
     </div>`
   ).join('');
@@ -101,7 +101,7 @@ function buildRowLabels() {
 function buildStepNumbers() {
   stepNumbers.innerHTML = new Array(STEPS).fill(0).map((_, i) =>
     `<div class="step-col" data-step="${i}">
-      <input class="col-payload" id="col-payload-${i}" value="${colPayloads[i]}" title="column payload" spellcheck="false" />
+      <input class="col-payload" id="col-payload-${i}" data-step="${i}" value="${colPayloads[i]}" title="column payload" spellcheck="false" />
       <div class="step-num">${i + 1}</div>
     </div>`
   ).join('');
