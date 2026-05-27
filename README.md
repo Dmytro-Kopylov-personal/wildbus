@@ -77,26 +77,56 @@ Remove all subscriptions.
 
 ## How it works
 
-Wildbus stores subscriptions in a **topic trie**. Each node has three kinds of children:
+Wildbus stores subscriptions in a **topic trie**. Given these subscriptions:
 
-```
-node
-├── children: Map<segment, node>   // exact literal match
-├── plus: node | null              // + matches one level
-└── hash: node | null              // # matches zero or more
-└── listeners: Set<fn>             // subscribers at this node
+| subscription | subscriber |
+|---|---|
+| `drums/+` | single-level wildcard |
+| `drums/#` | multi-level wildcard |
+| `bass/#` | catch bass subtree |
+| `lead/#` | catch lead subtree |
+| `#` | catch everything |
+
+The trie looks like this (● = wildcard node with a listener attached):
+
+```mermaid
+graph TD
+    root(( ))
+
+    root --> drums["drums"]
+    root --> bass["bass"]
+    root --> lead["lead"]
+    root --> all["● #"]
+
+    drums --> dk["kick"]
+    drums --> ds["snare"]
+    drums --> dh["hihat"]
+    drums --> dp["● +"]
+    drums --> dh2["● #"]
+
+    dk --> dkv["velocity"]
+
+    bass --> bn["note"]
+    bass --> bh["● #"]
+
+    lead --> ls["synth"]
+    lead --> lp["pad"]
+    lead --> lh["● #"]
+
+    style dp fill:#fbbf24,stroke:#fbbf24,color:#111
+    style dh2 fill:#a78bfa,stroke:#a78bfa,color:#fff
+    style bh fill:#a78bfa,stroke:#a78bfa,color:#fff
+    style lh fill:#a78bfa,stroke:#a78bfa,color:#fff
+    style all fill:#a78bfa,stroke:#a78bfa,color:#fff
 ```
 
-When you publish to `drums/kick`, the trie does a recursive fan-out from the root:
+On publish, the trie does a recursive fan-out. At each node it follows three paths:
 
-```
-publish("drums/kick")
-  ├── exact: children["drums"] → children["kick"] → collect listeners
-  ├── plus:  if node.plus → recurse, consuming one level
-  └── hash:  if node.hash → collect listeners now (zero levels) AND recurse
-```
+1. **exact** — `children.get(segment)` if present, advance one level
+2. **`+`** — if the node has a `plus` child, recurse into it consuming one level
+3. **`#`** — if the node has a `hash` child, collect its listeners (matches zero levels) AND recurse (matches more)
 
-A single publish hits exact matches, single-level wildcards, and multi-level wildcards in one traversal. Results land in a `Set`, so a listener subscribed to both `drums/+` and `drums/#` only fires once.
+Publishing `drums/kick` hits the exact path (`drums → kick`), the `+` wildcard (`drums → +`), the `drums/#` subscriber, and the root `#` — all in one traversal. Results land in a `Set`, so a listener subscribed to both `drums/+` and `drums/#` only fires once.
 
 The bus wrapper adds type generics, error isolation (one broken listener can't kill delivery), and idempotent unsubscribe.
 
