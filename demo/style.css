@@ -338,22 +338,22 @@ main {
 
 .col-payload {
   width: 32px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 2px;
-  padding: 1px 2px;
-  color: var(--text-dim);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 3px;
+  padding: 2px 2px;
+  color: var(--text);
   font-family: var(--font);
-  font-size: 8px;
+  font-size: 9px;
   text-align: center;
   outline: none;
-  margin-top: 3px;
-  transition: border-color 0.2s, color 0.2s;
+  margin-top: 2px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .col-payload:focus {
   border-color: var(--accent);
-  color: var(--text);
+  box-shadow: 0 0 6px var(--accent-glow);
 }
 
 .step-num {
