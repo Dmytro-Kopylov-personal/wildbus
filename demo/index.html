@@ -7,8 +7,26 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="splash" class="splash-overlay" role="dialog" aria-modal="true" aria-labelledby="splash-title" hidden>
+    <div class="splash-card">
+      <h2 id="splash-title">wildbus</h2>
+      <p class="splash-subtitle">Topic-Based Message Router</p>
+      <div class="splash-body">
+        <p>Each row publishes messages to a topic. Each chip is a wildcard subscriber. Watch the topic tree light up as messages route through the bus.</p>
+        <ul class="splash-features">
+          <li>7 tracks publishing to MQTT-style topics</li>
+          <li>5 wildcard subscribers (<code>+</code> and <code>#</code>)</li>
+          <li>Live topic tree visualization</li>
+          <li>Real-time message waterfall</li>
+        </ul>
+      </div>
+      <button id="splash-dismiss" class="splash-btn" autofocus>Explore Demo</button>
+    </div>
+  </div>
+
   <div id="app">
     <header>
+      <button id="btn-tree-toggle" class="tree-toggle-btn" aria-label="Toggle topic tree">&#9776;</button>
       <h1>wildbus</h1>
       <span class="subtitle">topic sequencer</span>
 
@@ -34,6 +52,7 @@
         <h2>topic tree</h2>
         <div id="tree-container"></div>
       </section>
+      <div id="tree-backdrop" class="tree-backdrop" hidden></div>
 
       <section id="seq-panel">
         <div id="sequencer">

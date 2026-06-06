@@ -69,6 +69,10 @@ header h1 {
   font-size: 11px;
 }
 
+.tree-toggle-btn {
+  display: none; /* hidden on desktop */
+}
+
 /* ── transport ── */
 
 .transport {
@@ -560,4 +564,286 @@ main {
   color: var(--green);
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ── splash / onboarding ── */
+
+.splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.4s ease;
+}
+
+.splash-overlay[hidden] {
+  display: none;
+}
+
+.splash-overlay.dismissed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px 28px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+.splash-card h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  text-shadow: 0 0 20px var(--accent-glow);
+  letter-spacing: -1px;
+  margin-bottom: 4px;
+}
+
+.splash-subtitle {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+}
+
+.splash-body {
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 24px;
+}
+
+.splash-body p {
+  margin-bottom: 14px;
+}
+
+.splash-features {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.splash-features li {
+  padding-left: 18px;
+  position: relative;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.splash-features li::before {
+  content: '\25B8';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+.splash-features code {
+  font-family: var(--font);
+  color: var(--yellow);
+  font-size: 11px;
+}
+
+.splash-btn {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 28px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.splash-btn:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.splash-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ── mobile (< 768px) ── */
+
+@media (max-width: 767px) {
+
+  /* ── header ── */
+  header {
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  header h1 {
+    font-size: 14px;
+  }
+
+  .subtitle {
+    display: none;
+  }
+
+  .transport {
+    margin-left: 4px;
+    padding: 2px 6px;
+    gap: 4px;
+  }
+
+  .bpm-group label {
+    display: none;
+  }
+
+  .bpm-group input {
+    width: 36px;
+    font-size: 10px;
+  }
+
+  .step-indicator {
+    font-size: 9px;
+    min-width: auto;
+    white-space: nowrap;
+  }
+
+  .header-actions button {
+    padding: 3px 6px;
+    font-size: 9px;
+  }
+
+  /* ── tree toggle button ── */
+  .tree-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--radius);
+    line-height: 1;
+    transition: color 0.15s;
+  }
+
+  .tree-toggle-btn:hover {
+    color: var(--accent);
+  }
+
+  .tree-toggle-btn.open {
+    color: var(--accent);
+  }
+
+  /* ── tree panel: slide-in overlay ── */
+  #tree-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 500;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+    border-right: 1px solid var(--border);
+  }
+
+  #tree-panel.open {
+    transform: translateX(0);
+  }
+
+  /* ── tree backdrop ── */
+  .tree-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 499;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .tree-backdrop.visible {
+    display: block;
+  }
+
+  /* ── row labels: compact ── */
+  .row-labels {
+    min-width: 0;
+    width: auto;
+  }
+
+  .row-label {
+    height: 36px;
+    padding: 0 2px 0 4px;
+  }
+
+  .row-label .dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .row-label-text {
+    width: auto;
+    max-width: 34px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .row-payload {
+    width: 28px;
+    font-size: 9px;
+    padding: 1px 2px;
+  }
+
+  .row-count {
+    min-width: 16px;
+    font-size: 8px;
+  }
+
+  /* ── grid cells ── */
+  .grid-cell {
+    touch-action: manipulation;
+  }
+
+  /* ── subscriber strip ── */
+  #subscriber-strip {
+    padding: 8px 10px;
+    min-height: auto;
+  }
+
+  #subscriber-strip h2 {
+    margin-bottom: 6px;
+  }
+
+  #subscriber-list {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+  }
+
+  .sub-chip {
+    flex: none;
+    min-width: 140px;
+    max-width: 180px;
+    scroll-snap-align: start;
+    padding: 6px;
+  }
 }

@@ -395,6 +395,84 @@ buildGrid();
 buildSubChips();
 updateTree();
 
+// ── splash / onboarding ──
+
+const SPLASH_KEY = 'wildbus-splash';
+
+function shouldShowSplash(): boolean {
+  try {
+    return !localStorage.getItem(SPLASH_KEY);
+  } catch {
+    return true;
+  }
+}
+
+function dismissSplash() {
+  splash.classList.add('dismissed');
+  try { localStorage.setItem(SPLASH_KEY, '1'); } catch { /* ignore */ }
+  setTimeout(() => {
+    splash.hidden = true;
+    splash.classList.remove('dismissed');
+  }, 400);
+}
+
+const splash = document.getElementById('splash')!;
+const splashDismiss = document.getElementById('splash-dismiss') as HTMLButtonElement;
+
+if (shouldShowSplash()) {
+  splash.hidden = false;
+  splashDismiss.addEventListener('click', dismissSplash);
+  splashDismiss.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') dismissSplash();
+  });
+}
+
+// ── mobile tree toggle ──
+
+const treeToggle = document.getElementById('btn-tree-toggle') as HTMLButtonElement;
+const treePanel = document.getElementById('tree-panel')!;
+const treeBackdrop = document.getElementById('tree-backdrop')!;
+
+function closeTreePanel() {
+  treePanel.classList.remove('open');
+  treeBackdrop.classList.remove('visible');
+  treeToggle.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function openTreePanel() {
+  treePanel.classList.add('open');
+  treeBackdrop.classList.add('visible');
+  treeToggle.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+treeToggle.addEventListener('click', () => {
+  if (treePanel.classList.contains('open')) {
+    closeTreePanel();
+  } else {
+    openTreePanel();
+  }
+});
+
+treeBackdrop.addEventListener('click', closeTreePanel);
+
+let resizeTimer: ReturnType<typeof setTimeout>;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (window.innerWidth >= 768) closeTreePanel();
+  }, 150);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && treePanel.classList.contains('open')) {
+    closeTreePanel();
+  }
+});
+
+// ── default groove ──
+
 const DEFAULT_GROOVE: boolean[][] = [
   [true,false,false,false, true,false,false,false, true,false,false,false, true,false,false,false],
   [false,false,false,false, true,false,false,false, false,false,false,false, true,false,false,false],
